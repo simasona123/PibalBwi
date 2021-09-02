@@ -1,6 +1,8 @@
 package com.example.pibalstametbwi;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -30,7 +32,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener{
+public class MainActivity extends AppCompatActivity implements SensorEventListener, Angin.AnginListener {
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private Sensor magnetometer;
@@ -38,25 +40,43 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private float[] rotationMatrix = new float[9];
     private float[] accelerometerData = new float[3];
     private float[] magnetometerData = new float[3];
+
     private TextView azimuth;
     private TextView pitch;
     private TextView waktuPengamatan;
     private TextView timer;
     private TextView textView;
+    private Button startButton;
+    private LinearLayout hasilPengukuran;
+    private Angin anginFragment;
+    private FragmentManager fragmentManager;
+    private FragmentTransaction fragmentTransaction;
+
     private int intervalRead = 100;
     private int intervalPengukuran = 0;
     private int waktuPengukuran = 0;
+    private int buttonCondition = 0;
+    private int nomor = 1;
+    private int besarAngin;
+
     private Handler mHandler;
     private Handler mHandler1;
-    private Button startButton;
-    private int buttonCondition = 0;
-    private LinearLayout hasilPengukuran;
+
     private SimpleDateFormat hariTanggal = new SimpleDateFormat("dd-MM-yyyy");
     private SimpleDateFormat jamDetik = new SimpleDateFormat("HH:mm:ss");
-    private int nomor = 1;
+
     NumberFormat formatter = NumberFormat.getInstance(Locale.US);
     DecimalFormat decimalFormat = (DecimalFormat) formatter;
     CountDownTimer countDownTimer = null;
+
+    @Override
+    public void sendInput(int besarAngin) {
+        this.besarAngin = besarAngin;
+        hasilPengukuran.addView(createNewTextView("Kecepatan Angin " + besarAngin));
+        startButton.setText("STOP");
+        Toast.makeText(MainActivity.this, "Pengamatan Dimulai", Toast.LENGTH_SHORT).show();
+        startPengukuran.run();
+    }
 
     Runnable startPengukuran = new Runnable() {
         @Override
@@ -65,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 if (intervalPengukuran == 0){
                     createNewTextView("");
                     hasilPengukuran.removeView(textView);
-                    intervalPengukuran = 90000 - (50 * 1000 / 3);
+                    intervalPengukuran = 90000; //TODO Ubah waktu awal
                     startTimer(intervalPengukuran);
                 }
                 else{
@@ -104,6 +124,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         hasilPengukuran = (LinearLayout) findViewById(R.id.hasilPengukuran);
         waktuPengamatan = findViewById(R.id.waktuPengamatan);
         timer = findViewById(R.id.timer);
+        anginFragment = Angin.newInstance();
+
         Date currentTime = Calendar.getInstance().getTime();
         waktuPengamatan.setText(hariTanggal.format(currentTime));
         mHandler = new Handler();
@@ -114,11 +136,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             public void onClick(View v) {
                 if(buttonCondition == 0){
                     buttonCondition = 1;
-                    startButton.setText("STOP");
-                    Toast.makeText(MainActivity.this, "Pengamatan Dimulai", Toast.LENGTH_SHORT).show();
-                    nomor = 0;
+                    nomor = 1;
                     hasilPengukuran.removeAllViews();
-                    startPengukuran.run();
+                    anginFragment.show(getSupportFragmentManager(), "AnginFragment");
                 }
                 else{
                     buttonCondition = 0;
@@ -231,6 +251,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         cancelTimer();
         mHandler.removeCallbacks(startReadOrientation);
     }
+
     void startTimer(int durasi){
         countDownTimer = new CountDownTimer(durasi, 1000) {
             @SuppressLint("SetTextI18n")
@@ -251,4 +272,5 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             countDownTimer.cancel();
         }
     }
+
 }
